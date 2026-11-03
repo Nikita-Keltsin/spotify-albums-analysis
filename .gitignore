@@ -1,0 +1,6 @@
+*.csv
+data/
+__marimo__/
+.vscode/
+.DS_Store
+__pycache__/

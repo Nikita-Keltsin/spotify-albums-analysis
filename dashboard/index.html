@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spotify Albums 2023 — EDA</title>
+  <meta name="description" content="Разведочный анализ набора Spotify Albums 2023: популярность альбомов, кодирование признаков, линеаризация, корреляции Пирсона и Спирмена, масштабирование. Лабораторная работа №4 по ОАД.">
+  <meta name="theme-color" content="#121212">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%23121212'/%3E%3Cg fill='%231ed760'%3E%3Crect x='7' y='14' width='4' height='11' rx='1'/%3E%3Crect x='14' y='8' width='4' height='17' rx='1'/%3E%3Crect x='21' y='11' width='4' height='14' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main id="dash-root">
+<div class="sp">
+  <header class="sp-hero" id="top">
+    <div class="sp-eyebrow"><span class="sp-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Разведочный анализ · Лабораторная №4</div>
+    <h1 class="sp-title">Spotify Albums 2023</h1>
+    <p class="sp-lead" id="lead">
+      Популярность релиза определяет прежде всего исполнитель: его закодированная средняя популярность (<code>artist_te</code>) связана с целевым признаком сильнее всех, коэффициент Спирмена
+      <span class="sp-v dash-skeleton" data-source="target_corr" data-field="spearman" data-where="feature=artist_te" data-fmt="r">—</span>.
+      Караоке-релизы почти никто не слушает (средняя популярность
+      <span class="sp-v dash-skeleton" data-source="flags" data-field="popularity_with" data-where="feature=is_karaoke" data-fmt="f1">—</span> против
+      <span class="sp-v dash-skeleton" data-source="flags" data-field="popularity_without" data-where="feature=is_karaoke" data-fmt="f1">—</span>), а релизы мейджор-лейблов собирают
+      <span class="sp-v dash-skeleton" data-source="flags" data-field="popularity_with" data-where="feature=is_major_label" data-fmt="f1">—</span> против
+      <span class="sp-v dash-skeleton" data-source="flags" data-field="popularity_without" data-where="feature=is_major_label" data-fmt="f1">—</span>.
+    </p>
+    <div class="sp-kpis">
+      <div class="sp-kpi"><span class="sp-kpi-l">Альбомов (объекты анализа)</span><span class="sp-kpi-v sp-acc sp-v dash-skeleton" data-source="kpi" data-field="albums" data-row="0" data-fmt="int">—</span></div>
+      <div class="sp-kpi"><span class="sp-kpi-l">Треков в исходных данных</span><span class="sp-kpi-v sp-v dash-skeleton" data-source="kpi" data-field="tracks" data-row="0" data-fmt="int">—</span></div>
+      <div class="sp-kpi"><span class="sp-kpi-l">Исполнителей</span><span class="sp-kpi-v sp-v dash-skeleton" data-source="kpi" data-field="artists" data-row="0" data-fmt="int">—</span></div>
+      <div class="sp-kpi"><span class="sp-kpi-l">Лейблов</span><span class="sp-kpi-v sp-v dash-skeleton" data-source="kpi" data-field="labels" data-row="0" data-fmt="int">—</span></div>
+      <div class="sp-kpi"><span class="sp-kpi-l">Медиана популярности (0–100)</span><span class="sp-kpi-v sp-v dash-skeleton" data-source="kpi" data-field="median_popularity" data-row="0" data-fmt="int">—</span></div>
+      <div class="sp-kpi"><span class="sp-kpi-l">Альбомов с популярностью 0</span><span class="sp-kpi-v sp-v dash-skeleton" data-source="kpi" data-field="zero_share" data-row="0" data-fmt="pct">—</span></div>
+    </div>
+  </header>
+
+  <nav class="sp-nav" aria-label="Разделы">
+    <button class="sp-pill" type="button" data-go="s-overview">Обзор данных</button>
+    <button class="sp-pill" type="button" data-go="s-encoding">Кодирование</button>
+    <button class="sp-pill" type="button" data-go="s-features">Новые признаки</button>
+    <button class="sp-pill" type="button" data-go="s-linear">Линеаризация</button>
+    <button class="sp-pill" type="button" data-go="s-corr">Корреляции</button>
+    <button class="sp-pill" type="button" data-go="s-scale">Масштабирование</button>
+  </nav>
+
+  <div class="sp-body">
+    <!-- 2.1 -->
+    <section class="sp-sec" id="s-overview">
+      <div class="sp-sec-h"><h2>Обзор данных</h2><span class="sp-sec-n">Раздел 2.1 · одна строка = один альбом</span></div>
+      <div class="sp-grid">
+        <article class="sp-card" id="card-hist">
+          <h3>Популярность сильно скошена к нулю</h3>
+          <p class="sp-note">Число альбомов по интервалам популярности (шкала Spotify 0–100). Зелёным выделен интервал 0–4: в нём больше всего альбомов.</p>
+          <div class="sp-chart dash-skeleton" id="c-hist" data-source="pop_hist"></div>
+        </article>
+        <article class="sp-card" id="card-type">
+          <h3>Синглы вдвое менее популярны</h3>
+          <p class="sp-note">Средняя популярность по типу релиза; в подписи — медиана и число альбомов.</p>
+          <div class="sp-chart dash-skeleton" id="c-type" data-source="by_type"></div>
+        </article>
+        <article class="sp-card sp-wide" id="card-year">
+          <h3>Старые альбомы популярнее, минимум в начале 2010-х</h3>
+          <p class="sp-note">Сверху — средняя популярность альбомов года выпуска, снизу — число альбомов. Пунктир — год с наименьшей средней популярностью среди лет, где не меньше 300 альбомов. Показаны годы с 1960-го.</p>
+          <div class="sp-chart dash-skeleton" id="c-year" data-source="by_year"></div>
+        </article>
+        <article class="sp-card sp-wide" id="card-labels">
+          <h3>Среди крупнейших лейблов много караоке-фабрик</h3>
+          <p class="sp-note">15 лейблов с наибольшим числом альбомов. Розовым отмечены караоке-лейблы: у них много релизов и почти нулевая популярность.</p>
+          <div class="sp-legend"><span><i class="sp-sw" style="background:var(--sp-green)"></i>обычный лейбл</span><span><i class="sp-sw" style="background:var(--sp-pink)"></i>караоке</span></div>
+          <div class="sp-chart dash-skeleton" id="c-labels" data-source="top_labels"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 2.2 -->
+    <section class="sp-sec" id="s-encoding">
+      <div class="sp-sec-h"><h2>Кодирование категориальных признаков</h2><span class="sp-sec-n">Раздел 2.2</span></div>
+      <article class="sp-card">
+        <h3>Способ кодирования выбран по числу категорий и смыслу признака</h3>
+        <p class="sp-note">Для признаков с десятками тысяч категорий one-hot неприменим. Для исполнителя target encoding считается out-of-fold, чтобы в код альбома не попадала его собственная популярность.</p>
+        <div class="sp-scroll">
+          <table class="sp-table" id="t-enc" data-source="encoding" data-row-key="feature">
+            <thead><tr>
+              <th data-field="feature">Признак</th><th data-field="kind">Тип</th><th class="n" data-field="categories">Категорий</th>
+              <th data-field="method">Способ кодирования</th><th data-field="reason">Почему</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- 2.3 -->
+    <section class="sp-sec" id="s-features">
+      <div class="sp-sec-h"><h2>Новые признаки из предметной области</h2><span class="sp-sec-n">Раздел 2.3</span></div>
+      <div class="sp-grid">
+        <article class="sp-card" id="card-flags">
+          <h3>Флаг меняет среднюю популярность в разы</h3>
+          <p class="sp-note">Средняя популярность альбомов без признака (серая точка) и с ним (цветная). В скобках — доля альбомов с признаком.</p>
+          <div class="sp-legend"><span><i class="sp-sw" style="background:var(--sp-dim)"></i>без признака</span><span><i class="sp-sw" style="background:var(--sp-green)"></i>с признаком, выше</span><span><i class="sp-sw" style="background:var(--sp-pink)"></i>с признаком, ниже</span></div>
+          <div class="sp-chart dash-skeleton" id="c-flags" data-source="flags"></div>
+        </article>
+        <article class="sp-card" id="card-feat">
+          <h3>Важен сам факт коллаборации, а не её доля</h3>
+          <p class="sp-note">Средняя популярность по доле треков альбома с приглашёнными исполнителями (<code>feat_share</code>).</p>
+          <div class="sp-chart dash-skeleton" id="c-feat" data-source="feat_bins"></div>
+        </article>
+        <article class="sp-card sp-wide">
+          <h3>Все шесть гипотез подтвердились</h3>
+          <p class="sp-note">Гипотеза подтверждена, если оба коэффициента корреляции с популярностью имеют ожидаемый знак и по модулю не меньше 0,05.</p>
+          <div class="sp-scroll">
+            <table class="sp-table" id="t-hyp" data-source="hyp" data-row-key="feature">
+              <thead><tr>
+                <th data-field="feature">Признак</th><th data-field="hypothesis">Гипотеза</th><th class="n" data-field="expected">Ожидаемый знак</th>
+                <th class="n" data-field="pearson">Пирсон</th><th class="n" data-field="spearman">Спирмен</th><th data-field="verdict">Итог</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 2.4 -->
+    <section class="sp-sec" id="s-linear">
+      <div class="sp-sec-h"><h2>Линеаризация зависимостей</h2><span class="sp-sec-n">Раздел 2.4 · линия = средняя популярность по интервалам признака</span></div>
+      <div class="sp-grid">
+        <article class="sp-card sp-lincard" data-feature="total_tracks">
+          <h3>Число треков: рост с насыщением</h3>
+          <span class="sp-fx">ln(total_tracks)</span>
+          <div class="sp-lin">
+            <div><div class="sp-lin-h">До · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_before" data-where="feature=total_tracks" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="до"></div></div>
+            <div><div class="sp-lin-h after">После · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_after" data-where="feature=total_tracks" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="после"></div></div>
+          </div>
+        </article>
+        <article class="sp-card sp-lincard" data-feature="album_minutes">
+          <h3>Длительность релиза: рост с насыщением</h3>
+          <span class="sp-fx">ln(album_minutes)</span>
+          <div class="sp-lin">
+            <div><div class="sp-lin-h">До · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_before" data-where="feature=album_minutes" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="до"></div></div>
+            <div><div class="sp-lin-h after">После · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_after" data-where="feature=album_minutes" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="после"></div></div>
+          </div>
+        </article>
+        <article class="sp-card sp-lincard" data-feature="label_count">
+          <h3>Размер лейбла: колокол → монотонная связь</h3>
+          <span class="sp-fx">(ln(label_count) − 3,23)²</span>
+          <div class="sp-lin">
+            <div><div class="sp-lin-h">До · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_before" data-where="feature=label_count" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="до"></div></div>
+            <div><div class="sp-lin-h after">После · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_after" data-where="feature=label_count" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="после"></div></div>
+          </div>
+        </article>
+        <article class="sp-card sp-lincard" data-feature="release_year">
+          <h3>Год выпуска: U-форма → почти монотонная</h3>
+          <span class="sp-fx">|release_year − 2013|</span>
+          <div class="sp-lin">
+            <div><div class="sp-lin-h">До · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_before" data-where="feature=release_year" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="до"></div></div>
+            <div><div class="sp-lin-h after">После · Пирсон <span class="sp-v dash-skeleton" data-source="lin_compare" data-field="pearson_after" data-where="feature=release_year" data-fmt="r">—</span></div><div class="sp-chart dash-skeleton" data-source="lin_trend" data-stage="после"></div></div>
+          </div>
+        </article>
+        <article class="sp-card sp-wide">
+          <h3>Линейная связь усилилась у всех четырёх признаков</h3>
+          <p class="sp-note">У логарифма Спирмен не меняется: монотонное преобразование сохраняет ранги, поэтому Пирсон вырос только за счёт формы связи. R² линии тренда показывает, насколько средние по интервалам близки к прямой (1 — идеально).</p>
+          <div class="sp-scroll">
+            <table class="sp-table" id="t-lin" data-source="lin_compare" data-row-key="feature">
+              <thead><tr>
+                <th data-field="feature">Признак</th><th data-field="transform">Преобразование</th>
+                <th class="n" data-field="pearson_before">Пирсон до</th><th class="n" data-field="pearson_after">Пирсон после</th>
+                <th class="n" data-field="spearman_before">Спирмен до</th><th class="n" data-field="spearman_after">Спирмен после</th>
+                <th class="n" data-field="trend_r2_before">R² тренда до</th><th class="n" data-field="trend_r2_after">R² тренда после</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 2.5–2.6 -->
+    <section class="sp-sec" id="s-corr">
+      <div class="sp-sec-h"><h2>Корреляции Пирсона и Спирмена</h2><span class="sp-sec-n">Разделы 2.5–2.6</span></div>
+      <div class="sp-grid">
+        <article class="sp-card sp-wide" id="card-target">
+          <h3>Связь каждого признака с популярностью</h3>
+          <p class="sp-note">Признаки отсортированы по модулю коэффициента Спирмена. Разрыв между точками показывает нелинейность, выбросы или немонотонную связь. Цвет названия — группа признака.</p>
+          <div class="sp-legend">
+            <span><i class="sp-sw sp-ring"></i>Пирсон</span><span><i class="sp-sw" style="background:var(--sp-green)"></i>Спирмен</span>
+            <span style="color:var(--sp-muted)">исходный</span><span style="color:var(--sp-blue)">кодированный</span><span style="color:var(--sp-yellow)">сконструированный</span><span style="color:var(--sp-pink)">линеаризованный</span>
+          </div>
+          <div class="sp-chart dash-skeleton" id="c-target" data-source="target_corr"></div>
+        </article>
+        <article class="sp-card sp-wide" id="card-heat">
+          <h3>Корреляционная матрица итогового набора</h3>
+          <p class="sp-note">Наведите на клетку, чтобы увидеть оба коэффициента. Режим «Спирмен − Пирсон» подсвечивает пары, где коэффициенты расходятся сильнее всего.</p>
+          <div class="sp-toggle" role="group" aria-label="Коэффициент">
+            <button class="sp-pill" type="button" data-mode="spearman" aria-pressed="true">Спирмен</button>
+            <button class="sp-pill" type="button" data-mode="pearson" aria-pressed="false">Пирсон</button>
+            <button class="sp-pill" type="button" data-mode="diff" aria-pressed="false">Спирмен − Пирсон</button>
+          </div>
+          <div class="sp-scroll"><div class="sp-chart dash-skeleton" id="c-heat" data-source="corr"></div></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 2.7 -->
+    <section class="sp-sec" id="s-scale">
+      <div class="sp-sec-h"><h2>Масштабирование признаков</h2><span class="sp-sec-n">Раздел 2.7 · параметры по обучающей выборке (80%)</span></div>
+      <div class="sp-grid sp-range">
+        <article class="sp-card" data-feature="release_year">
+          <h3>release_year</h3>
+          <p class="sp-note">Левый хвост из старых альбомов: MinMax сжимает почти всё к единице.</p>
+          <div class="sp-chart dash-skeleton" data-source="scale"></div>
+        </article>
+        <article class="sp-card" data-feature="album_minutes">
+          <h3>album_minutes</h3>
+          <p class="sp-note">Сильная правая асимметрия: длинный хвост сохраняется при любом методе.</p>
+          <div class="sp-chart dash-skeleton" data-source="scale"></div>
+        </article>
+        <article class="sp-card" data-feature="label_count">
+          <h3>label_count</h3>
+          <p class="sp-note">Самый тяжёлый хвост: после MinMax медиана почти 0, после Robust максимум уходит далеко вправо.</p>
+          <div class="sp-chart dash-skeleton" data-source="scale"></div>
+        </article>
+        <article class="sp-card sp-wide">
+          <h3>Форма распределения не меняется ни одним методом</h3>
+          <p class="sp-note">Все три метода — линейные преобразования, поэтому асимметрия одинакова до и после. Итоговый выбор — логарифм для асимметричных признаков, затем StandardScaler, обученный только на обучающей выборке.</p>
+          <div class="sp-scroll">
+            <table class="sp-table" id="t-scale" data-source="scale" data-row-key="key">
+              <thead><tr>
+                <th data-field="feature">Признак</th><th data-field="method">Метод</th>
+                <th class="n" data-field="mean">Среднее</th><th class="n" data-field="std">Ст. откл.</th><th class="n" data-field="min">Мин.</th>
+                <th class="n" data-field="median">Медиана</th><th class="n" data-field="max">Макс.</th><th class="n" data-field="iqr">IQR</th><th class="n" data-field="skew">Асимметрия</th>
+                <th class="n" data-field="test_mean">Тест: среднее</th><th class="n" data-field="test_std">Тест: ст. откл.</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+  <p class="sp-foot">Данные: Spotify Albums Data 2023, очищенные в ЛР №3 (<code>spotify_albums_2023_clean.csv</code>). Расчёты — ноутбук <code>lab4_eda.py</code>, данные страницы собирает <code>build_data.py</code>. Популярность — показатель Spotify по шкале 0–100. Учебный проект по дисциплине ОАД (МГТУ им. Н.Э. Баумана); не связан со Spotify AB.</p>
+  <div class="sp-tip" hidden></div>
+</div>
+</main>
+<noscript><p style="padding:16px;color:#b3b3b3">Для графиков нужен JavaScript.</p></noscript>
+<script src="assets/d3.v7.9.0.min.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
